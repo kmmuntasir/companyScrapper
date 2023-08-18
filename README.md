@@ -1,4 +1,4 @@
-# CompanyS crapper
+# Company Information Scrapper
 An assignment repo to test scrapping a website
 
 ## Setup Instructions

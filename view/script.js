@@ -185,9 +185,9 @@ function setTableContent(data) {
     rows += `<tr>
         <td>${data[i].name}</td>
         <td>${data[i].registrationCode}</td>
-        <td>${data[i].vat}</td>
-        <td>${data[i].address}</td>
-        <td>${data[i].mobilePhone}</td>
+        <td>${data[i].vat ?? ''}</td>
+        <td>${data[i].address ?? ''}</td>
+        <td>${data[i].mobilePhone ?? ''}</td>
         <td>
           <div class="dropdown">
             <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">

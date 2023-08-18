@@ -1,0 +1,5 @@
+controllers:
+    resource: ../src/Controller/
+    type: attribute
+static_passthrough:
+    resource: "@StaticPassthroughBundle/Resources/config/routes.php"

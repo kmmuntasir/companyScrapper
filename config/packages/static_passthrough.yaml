@@ -1,0 +1,5 @@
+static_passthrough:
+    definitions:
+        docs: # Route name will be 'static_passthrough_docs'
+            root_folder: 'view' # Where to find files to passthrough (this path has to be relative to %kernel.project_dir%)
+            path_prefix: 'view/' # Path to reach files in root_folder

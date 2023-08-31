@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Resolver;
 
 use App\Exception\CompanyNotFoundException;
+use App\Exception\ResolveFailedException;
 use Symfony\Component\DomCrawler\Crawler;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 class CompanyInformationResolver
@@ -36,36 +38,45 @@ class CompanyInformationResolver
 
     public function resolve(string $registrationCode): array
     {
-        [
-            $companyName,
-            $companyUrl,
-        ] = $this->getCompanyNameAndUrl(
-            registrationCode: $registrationCode
-        );
+        try {
+            [
+                $companyName,
+                $companyUrl,
+            ] = $this->getCompanyNameAndUrl(
+                registrationCode: $registrationCode
+            );
 
-        if (null === $companyName || null === $companyUrl) {
-            throw (new CompanyNotFoundException('Company Not Found'))
-            ->setContext([
-                'error' => "HTML parsing failed for company with registration code $registrationCode",
-            ]);
+            if (null === $companyName || null === $companyUrl) {
+                throw (new CompanyNotFoundException('Company Not Found'))
+                    ->setContext([
+                        'error' => "HTML parsing failed for company with registration code $registrationCode",
+                    ]);
+            }
+
+            $companyDetails = $this->getCompanyDetails($companyUrl);
+            $companyDetails['name'] = $companyName;
+            $companyDetails['registrationCode'] = $registrationCode;
+
+            $companyTurnoverInfo = $this->getCompanyTurnoverInfo(
+                companyTurnoverUrl: $companyUrl . '/turnover',
+            );
+
+            array_walk($companyTurnoverInfo, function (&$turnover, $year) {
+                $turnover['year'] = $year;
+            });
+
+            return [
+                'details' => $companyDetails,
+                'turnover' => $companyTurnoverInfo,
+            ];
+        } catch (HttpExceptionInterface $exception) {
+            throw (new ResolveFailedException('Connection to the server failed'))
+                ->setContext([
+                    'error' => "Connection to the server failed for company with registration code $registrationCode",
+                    'httpExceptionCode' => $exception->getCode(),
+                    'httpExceptionMessage' => $exception->getMessage(),
+                ]);
         }
-
-        $companyDetails = $this->getCompanyDetails($companyUrl);
-        $companyDetails['name'] = $companyName;
-        $companyDetails['registrationCode'] = $registrationCode;
-
-        $companyTurnoverInfo = $this->getCompanyTurnoverInfo(
-            companyTurnoverUrl: $companyUrl . '/turnover',
-        );
-
-        array_walk($companyTurnoverInfo, function (&$turnover, $year) {
-            $turnover['year'] = $year;
-        });
-
-        return [
-            'details' => $companyDetails,
-            'turnover' => $companyTurnoverInfo,
-        ];
     }
 
     private function getCompanyTurnoverInfo(string $companyTurnoverUrl): array
@@ -179,5 +190,13 @@ class CompanyInformationResolver
     private function sanitizeText($inputString): string
     {
         return preg_replace('/\s+/', ' ', trim($inputString));
+    }
+
+    private function throwNotFoundException(string $registrationCode): void
+    {
+        throw (new CompanyNotFoundException('Company Not Found'))
+            ->setContext([
+                'error' => "HTML parsing failed for company with registration code $registrationCode",
+            ]);
     }
 }

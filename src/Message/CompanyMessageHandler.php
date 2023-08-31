@@ -7,10 +7,13 @@ namespace App\Message;
 use App\Entity\Company;
 use App\Entity\Turnover;
 use App\Exception\CompanyNotFoundException;
+use App\Exception\ResolveFailedException;
 use App\Resolver\CompanyInformationResolver;
 use App\Service\CompanyService;
 use Psr\Log\LoggerInterface;
 use Symfony\Component\Messenger\Attribute\AsMessageHandler;
+use Symfony\Component\Messenger\Exception\HandlerFailedException;
+use Throwable;
 
 #[AsMessageHandler]
 class CompanyMessageHandler
@@ -45,10 +48,14 @@ class CompanyMessageHandler
             $this->logger->notice(
                 message: "Company info parsed success: Registration code $registrationCode"
             );
-        } catch (CompanyNotFoundException $exception) {
+        } catch (ResolveFailedException|CompanyNotFoundException $exception) {
             $this->logger->error(
                 message: $exception->getMessage(),
                 context: $exception->getContext(),
+            );
+        } catch (Throwable $exception) {
+            $this->logger->error(
+                message: $exception->getMessage(),
             );
         }
     }
